@@ -138,7 +138,6 @@
     </footer>
 
     <script>
-        // Lógica de pestañas
         const tabDownload = document.getElementById('tab-download');
         const tabConvert = document.getElementById('tab-convert');
         const viewDownload = document.getElementById('download-section');
@@ -157,7 +156,6 @@
             platformsFooter.style.display = 'block'; 
         });
 
-        // Click listeners para radios locales
         document.querySelectorAll('.radio-card').forEach(card => {
             card.addEventListener('click', function() {
                 const input = this.querySelector('input');
@@ -254,9 +252,6 @@
             }
         });
 
-        // ==========================================
-        // PESTAÑA 1: DESCARGADOR DE ENLACES
-        // ==========================================
         const urlInput = document.getElementById('urlInput');
         const dlForm = document.getElementById('downloadForm');
         const qualityWrapper = document.getElementById('qualityWrapper');
@@ -375,9 +370,6 @@
             dlForm.reset(); document.getElementById('inputBox').classList.remove('scanning'); returnIcon(); 
         }
 
-        // ==========================================
-        // PESTAÑA 2: PROCESADOR IA
-        // ==========================================
         const uploadForm = document.getElementById('uploadForm');
         const videoFileInput = document.getElementById('videoFile');
         const fileNameDisplay = document.getElementById('fileNameDisplay');
@@ -475,22 +467,18 @@
             fireParticles(document.getElementById('uploadShareBtn'));
         }
 
-        // Funcionalidad del nuevo botón de Copiar Texto
         document.getElementById('copyTextBtn').addEventListener('click', async function() {
             const textToCopy = document.getElementById('transcriptionText').innerText;
             const btn = document.getElementById('copyTextBtn');
             
             try {
                 await navigator.clipboard.writeText(textToCopy);
-                
-                // Animación visual de éxito
                 const originalText = btn.innerHTML;
                 btn.innerHTML = '✅ ¡Copiado!';
                 btn.style.borderColor = '#00ff88';
                 btn.style.color = '#00ff88';
                 btn.style.background = 'rgba(0, 255, 136, 0.1)';
                 
-                // Volver a la normalidad después de 2 segundos
                 setTimeout(() => {
                     btn.innerHTML = originalText;
                     btn.style.borderColor = '#00a2ff';

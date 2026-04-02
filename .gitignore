@@ -1,4 +1,7 @@
 __pycache__/
+.venv/
+venv/
 descargas/
 uploads/
-*.pyc
+cookies.txt
+stats.json

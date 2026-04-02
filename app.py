@@ -17,7 +17,7 @@ app = Flask(__name__)
 DOWNLOAD_FOLDER = 'descargas'
 UPLOAD_FOLDER = 'uploads'
 COOKIES_FILE = 'cookies.txt' 
-STATS_FILE = 'stats.json' # Archivo para guardar las estadísticas
+STATS_FILE = 'stats.json'
 FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
 
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
@@ -29,9 +29,6 @@ app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 ALLOWED_EXTENSIONS = {'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'm4v', 'wmv'}
 tasks = {}
 
-# ==========================================
-# SISTEMA DE ESTADÍSTICAS
-# ==========================================
 def load_stats():
     if os.path.exists(STATS_FILE):
         try:
@@ -63,9 +60,6 @@ def progress_hook(d, task_id):
         except ValueError: progress = 0
         tasks[task_id]['progress'] = progress
 
-# ==========================================
-# MOTOR 1: DESCARGADOR DE ENLACES
-# ==========================================
 def download_video_task(url, task_id, quality):
     if quality == '1080':
         format_selector = 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]/best'
@@ -86,7 +80,6 @@ def download_video_task(url, task_id, quality):
         'cookiefile': COOKIES_FILE, 
         'ffmpeg_location': FFMPEG_PATH,
         'progress_hooks': [lambda d: progress_hook(d, task_id)],
-        # NUEVO: Camuflaje para evadir bloqueos
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -131,7 +124,6 @@ def start_download():
     if "threads.com" in video_url: video_url = video_url.replace("threads.com", "threads.net")
     if "threads.net" in video_url and "?" in video_url: video_url = video_url.split("?")[0]
 
-    # Registrar estadística
     stats = load_stats()
     stats['total_links_descargados'] += 1
     save_stats(stats)
@@ -160,9 +152,6 @@ def download_file():
         return send_file(task['file_path'], mimetype=task.get('mime_type', 'video/mp4'), as_attachment=True, download_name=task.get('final_name', 'video.mp4'))
     return jsonify({"error": "Tarea no completada."}), 404
 
-# ==========================================
-# MOTOR 2: PROCESADOR IA Y FFMPEG PURO
-# ==========================================
 @app.route('/process_media', methods=['POST'])
 def process_media():
     if 'video' not in request.files: return "No se encontró el archivo", 400
@@ -171,7 +160,6 @@ def process_media():
 
     if file.filename == '': return "Ningún archivo seleccionado", 400
     if file and allowed_file(file.filename):
-        # Registrar estadística de herramienta local
         stats = load_stats()
         if action in stats['herramientas_locales']:
             stats['herramientas_locales'][action] += 1
@@ -240,16 +228,12 @@ def process_media():
                     except: pass
     else: return f"Formato no soportado. Extensiones permitidas: {', '.join(ALLOWED_EXTENSIONS)}", 400
 
-# ==========================================
-# PANEL DE ADMINISTRADOR
-# ==========================================
 @app.route('/panel-admin')
 def admin_panel():
     return render_template('admin.html')
 
 @app.route('/api/stats')
 def get_stats():
-    # Devuelve el archivo JSON con los datos al frontend
     return jsonify(load_stats())
 
 if __name__ == '__main__':

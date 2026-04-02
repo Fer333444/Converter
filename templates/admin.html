@@ -42,7 +42,6 @@
         }
         .stat-title.green { color: #00ff88; }
         
-        /* Indicador de "En Vivo" que palpita */
         .live-indicator {
             display: inline-flex;
             align-items: center;
@@ -72,45 +71,17 @@
             100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); }
         }
 
-        /* =========================================
-           ADAPTACIÓN PERFECTA PARA MÓVILES
-        ========================================= */
         @media (max-width: 768px) {
-            .glass-panel {
-                margin-top: 20px !important;
-                padding: 2rem 1.2rem !important;
-                width: 95%;
-            }
-            .glass-panel h1 {
-                font-size: 24px !important;
-            }
-            .stats-grid {
-                /* En celulares lo dividimos en 2 columnas perfectas */
-                grid-template-columns: repeat(2, 1fr); 
-                gap: 12px;
-                margin-top: 20px;
-            }
-            .stat-card {
-                padding: 15px 10px; /* Reducimos el relleno interno */
-            }
-            .stat-number {
-                font-size: 28px; /* Números un poco más pequeños */
-            }
-            .stat-title {
-                font-size: 11px; /* Textos ajustados para que no se corten */
-            }
-            .live-indicator {
-                margin-top: 25px;
-                font-size: 11px;
-                padding: 6px 14px;
-            }
+            .glass-panel { margin-top: 20px !important; padding: 2rem 1.2rem !important; width: 95%; }
+            .glass-panel h1 { font-size: 24px !important; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 20px; }
+            .stat-card { padding: 15px 10px; }
+            .stat-number { font-size: 28px; }
+            .stat-title { font-size: 11px; }
+            .live-indicator { margin-top: 25px; font-size: 11px; padding: 6px 14px; }
         }
-
-        /* Para pantallas extremadamente pequeñas (iPhone SE, etc) */
         @media (max-width: 380px) {
-            .stats-grid {
-                grid-template-columns: 1fr; /* Una sola columna vertical */
-            }
+            .stats-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -160,15 +131,9 @@
                 document.getElementById('stat-txt').innerText = data.herramientas_locales.txt;
                 document.getElementById('stat-mp4').innerText = data.herramientas_locales.mp4;
                 document.getElementById('stat-audio').innerText = data.herramientas_locales.mp3 + data.herramientas_locales.wav;
-            } catch (e) {
-                console.error("Fallo al cargar las estadísticas", e);
-            }
+            } catch (e) { console.error("Fallo", e); }
         }
-
-        // Cargar inmediatamente
         loadStats();
-
-        // Actualizar cada 3 segundos
         setInterval(loadStats, 3000);
     </script>
 </body>
