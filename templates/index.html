@@ -106,11 +106,16 @@
                     <h3>Pre-escucha de Audio:</h3>
                     <audio id="audioPlayer" controls></audio>
                 </div>
+                
                 <div id="textViewerContainer" class="result-card" style="display: none;">
-                    <h3 style="color:#00a2ff;">TRANSCRIPCIÓN DE LA IA:</h3>
-                    <div id="transcriptionText"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="color:#00a2ff; margin: 0; font-size: 16px;">TRANSCRIPCIÓN IA:</h3>
+                        <button id="copyTextBtn" style="background: rgba(0,162,255,0.2); border: 1px solid #00a2ff; color: #fff; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.3s; font-size: 12px; font-weight: bold;">📋 Copiar</button>
+                    </div>
+                    <div id="transcriptionText" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; max-height: 250px; overflow-y: auto; text-align: left; font-size: 14px; line-height: 1.6; color: #ddd; user-select: all;"></div>
                 </div>
-                <button id="uploadShareBtn" class="action-btn green-btn">⬇️ Descargar Resultado</button>
+
+                <button id="uploadShareBtn" class="action-btn green-btn" style="margin-top: 15px;">⬇️ Descargar Resultado</button>
             </div>
         </div>
 
@@ -129,7 +134,7 @@
     </div>
 
     <footer>
-        <span>Términos</span> • <span>Privacidad</span> • <span>Contacto</span> • <span>API</span>
+        <span>Términos</span> • <span>Privacidad</span> • <span>Contacto</span> • <a href="/panel-admin" style="color: inherit; text-decoration: none;">API</a>
     </footer>
 
     <script>
@@ -180,7 +185,6 @@
         let activeIconElement = null;
         window.currentDlProgress = 0;
 
-        // Vuela el logo AL INICIO (0%) de la barra
         function moveIconToTarget(platformClass, targetId) {
             const icon = document.querySelector(platformClass);
             const target = document.getElementById(targetId);
@@ -191,7 +195,6 @@
             const wRect = wrapper.getBoundingClientRect(); const tRect = target.getBoundingClientRect();
             if (tRect.width === 0 && tRect.top === 0) { setTimeout(() => moveIconToTarget(platformClass, targetId), 50); return; }
 
-            // Calcular distancia exacta al inicio de la barra (donde está el target-spot)
             const tx = tRect.left - (wRect.left + wRect.width/2);
             const ty = tRect.top - (wRect.top + wRect.height/2);
             
@@ -203,7 +206,6 @@
             icon.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.8s ease';
             icon.style.boxShadow = `0 15px 25px rgba(0,0,0,0.9), inset 0 2px 2px rgba(255,255,255,0.6)`;
             
-            // Efecto flotante leve encima de la barra
             icon.style.transform = `translate(calc(${tx}px + var(--progress-x, 0px)), ${ty}px) scale(1.3) rotate(-5deg)`;
             icon.querySelector('svg').style.transform = `scale(1.1)`; 
 
@@ -236,7 +238,6 @@
             if (pC) moveIconToTarget(pC, targetId); else returnIcon();
         }
 
-        // Actualizar al redimensionar
         window.addEventListener('resize', () => {
             if (activeIconElement) {
                 const wrapper = activeIconElement.parentElement;
@@ -261,7 +262,6 @@
         const qualityWrapper = document.getElementById('qualityWrapper');
         let dlFile = null;
 
-        // Función que empuja el progreso Y el logo al mismo tiempo
         function updateUIPercentage(pct) {
             document.getElementById('progress-fill').style.width = pct + '%';
             if (pct === 0) {
@@ -274,7 +274,6 @@
             
             if(activeIconElement) {
                 const barWidth = document.querySelector('.progress-bar-container').offsetWidth;
-                // Ajustamos suavemente la variable progress-x
                 activeIconElement.style.setProperty('--progress-x', (pct / 100) * barWidth + 'px');
             }
         }
@@ -438,7 +437,6 @@
                 if (xhr.status === 200 && contentType !== 'text/html') {
                     handleIABlobSuccess(xhr.response, actionSelected);
                 } else {
-                    // Ahora capturamos el error EXACTO del servidor en Python
                     let serverError = "Error desconocido de conexión.";
                     try {
                         serverError = await xhr.response.text();
@@ -476,6 +474,34 @@
             document.getElementById('uploadShareBtn').classList.add('morph-active');
             fireParticles(document.getElementById('uploadShareBtn'));
         }
+
+        // Funcionalidad del nuevo botón de Copiar Texto
+        document.getElementById('copyTextBtn').addEventListener('click', async function() {
+            const textToCopy = document.getElementById('transcriptionText').innerText;
+            const btn = document.getElementById('copyTextBtn');
+            
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                
+                // Animación visual de éxito
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ ¡Copiado!';
+                btn.style.borderColor = '#00ff88';
+                btn.style.color = '#00ff88';
+                btn.style.background = 'rgba(0, 255, 136, 0.1)';
+                
+                // Volver a la normalidad después de 2 segundos
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.borderColor = '#00a2ff';
+                    btn.style.color = '#fff';
+                    btn.style.background = 'rgba(0,162,255,0.2)';
+                }, 2000);
+            } catch (err) {
+                console.error('Fallo al copiar: ', err);
+                btn.innerHTML = '❌ Error';
+            }
+        });
 
         document.getElementById('uploadShareBtn').addEventListener('click', async () => {
             if (!uploadFileBlob) return;
