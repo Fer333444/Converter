@@ -2,13 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Panel de Control - Convertia GO</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <style>
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 20px;
             margin-top: 30px;
             transform: translateZ(30px);
@@ -42,7 +42,7 @@
         }
         .stat-title.green { color: #00ff88; }
         
-        /* Nuevo indicador de "En Vivo" que palpita */
+        /* Indicador de "En Vivo" que palpita */
         .live-indicator {
             display: inline-flex;
             align-items: center;
@@ -71,6 +71,47 @@
             70% { box-shadow: 0 0 0 10px rgba(255, 50, 50, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); }
         }
+
+        /* =========================================
+           ADAPTACIÓN PERFECTA PARA MÓVILES
+        ========================================= */
+        @media (max-width: 768px) {
+            .glass-panel {
+                margin-top: 20px !important;
+                padding: 2rem 1.2rem !important;
+                width: 95%;
+            }
+            .glass-panel h1 {
+                font-size: 24px !important;
+            }
+            .stats-grid {
+                /* En celulares lo dividimos en 2 columnas perfectas */
+                grid-template-columns: repeat(2, 1fr); 
+                gap: 12px;
+                margin-top: 20px;
+            }
+            .stat-card {
+                padding: 15px 10px; /* Reducimos el relleno interno */
+            }
+            .stat-number {
+                font-size: 28px; /* Números un poco más pequeños */
+            }
+            .stat-title {
+                font-size: 11px; /* Textos ajustados para que no se corten */
+            }
+            .live-indicator {
+                margin-top: 25px;
+                font-size: 11px;
+                padding: 6px 14px;
+            }
+        }
+
+        /* Para pantallas extremadamente pequeñas (iPhone SE, etc) */
+        @media (max-width: 380px) {
+            .stats-grid {
+                grid-template-columns: 1fr; /* Una sola columna vertical */
+            }
+        }
     </style>
 </head>
 <body>
@@ -84,25 +125,25 @@
 
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-title green">🌍 Links Descargados</div>
+                <div class="stat-title green">🌍 Links<br>Descargados</div>
                 <div class="stat-number" id="stat-links">0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-title">🤖 Transcripciones IA</div>
+                <div class="stat-title">🤖 Transcripciones<br>IA</div>
                 <div class="stat-number" id="stat-txt">0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-title">🎬 Convertidos MP4</div>
+                <div class="stat-title">🎬 Convertidos<br>MP4</div>
                 <div class="stat-number" id="stat-mp4">0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-title">🎵 Audios Extraídos</div>
+                <div class="stat-title">🎵 Audios<br>Extraídos</div>
                 <div class="stat-number" id="stat-audio">0</div>
             </div>
         </div>
 
         <div class="live-indicator">
-            <div class="dot"></div> Actualización Automática
+            <div class="dot"></div> En Vivo
         </div>
         
         <br><br><br>
@@ -115,21 +156,19 @@
                 const res = await fetch('/api/stats');
                 const data = await res.json();
                 
-                // Actualizar los números en pantalla
                 document.getElementById('stat-links').innerText = data.total_links_descargados;
                 document.getElementById('stat-txt').innerText = data.herramientas_locales.txt;
                 document.getElementById('stat-mp4').innerText = data.herramientas_locales.mp4;
-                // Sumar mp3 y wav para tener el total de audios
                 document.getElementById('stat-audio').innerText = data.herramientas_locales.mp3 + data.herramientas_locales.wav;
             } catch (e) {
                 console.error("Fallo al cargar las estadísticas", e);
             }
         }
 
-        // 1. Cargar los datos inmediatamente al entrar a la página
+        // Cargar inmediatamente
         loadStats();
 
-        // 2. MAGIA: Programar un temporizador que ejecute loadStats() cada 3 segundos (3000 milisegundos)
+        // Actualizar cada 3 segundos
         setInterval(loadStats, 3000);
     </script>
 </body>
