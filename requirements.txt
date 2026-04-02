@@ -1,0 +1,8 @@
+Flask==3.0.2
+yt-dlp==2024.3.10
+imageio-ffmpeg==0.4.9
+moviepy==1.0.3
+SpeechRecognition==3.10.1
+openai-whisper==20231117
+torch
+gunicorn==21.2.0

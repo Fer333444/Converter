@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Convertia GO</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+    <div class="stars-container" id="stars-bg">
+        <div class="shooting-star"></div><div class="shooting-star"></div><div class="shooting-star"></div><div class="shooting-star"></div><div class="shooting-star"></div>
+    </div>
+
+    <div class="ambient-glow" id="ambient-glow"><div class="glow-1"></div><div class="glow-2"></div></div>
+
+    <div class="top-logo stagger-1">
+        <div class="play-icon"></div><span>Convertia GO</span>
+    </div>
+
+    <div class="glass-panel stagger-2" id="glass-panel">
+        
+        <div class="tabs-container">
+            <button id="tab-download" class="tab-btn active">DOWNLOAD</button>
+            <button id="tab-convert" class="tab-btn">CONVERTER</button>
+        </div>
+
+        <div id="download-section" class="section-view active-view">
+            <h1>Descarga videos de<br>cualquier plataforma</h1>
+            <p class="subtitle">Descargas ultra rápidas, gratis y en máxima calidad (HD/4K).</p>
+
+            <form id="downloadForm">
+                <div class="input-group" id="inputBox">
+                    <input type="url" name="url" placeholder="https://vm.tiktok.com/..." required autocomplete="off" id="urlInput">
+                </div>
+
+                <div class="quality-wrapper" id="qualityWrapper" style="display: none; margin-top: 15px;">
+                    <select name="quality" id="qualitySelect" class="quality-dropdown">
+                        <option value="best">👑 Máxima Calidad (4K / 1080p)</option>
+                        <option value="1080">📺 Alta Definición (1080p)</option>
+                        <option value="720">📱 Estándar (720p)</option>
+                        <option value="480">🔋 Ahorro de Datos (480p)</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="submitBtn" class="action-btn">Descargar ahora</button>
+            </form>
+
+            <div id="error-msg"></div>
+
+            <div id="progress-area" class="progress-area">
+                <div class="progress-bar-wrapper">
+                    <div class="icon-target-spot" id="icon-target-spot"></div> 
+                    <div class="progress-bar-container">
+                        <div class="progress-fill-overlay" id="progress-fill"></div>
+                    </div>
+                </div>
+                <div id="status-text" class="status-text">Listo para procesar</div>
+            </div>
+
+            <button id="shareBtn" class="action-btn green-btn" style="display:none;">📲 Guardar / Compartir</button>
+        </div>
+
+        <div id="convert-section" class="section-view">
+            <h1>Convierte Videos MOV<br><span style="color:#00a2ff">Transcripcion a Texto</span></h1>
+            <p class="subtitle">Sube tu MP4/MOV para extraer audio o transcribir con Whisper.</p>
+
+            <form id="uploadForm">
+                <label for="videoFile" class="drop-zone" id="dropZone">
+                    <div class="drop-icon">📁</div>
+                    <p id="fileNameDisplay" class="drop-text"><span>Toca para seleccionar</span> un video (MOV, MP4)</p>
+                    <input id="videoFile" name="video" type="file" accept=".mov,.mp4" style="display: none;" required/>
+                </label>
+
+                <div class="radio-grid" id="formatSelectorsUpload">
+                    <label class="radio-card selected" style="border-color: #00a2ff;">
+                        <input type="radio" name="action" value="mp4" checked>
+                        <span>🎬 Video MP4</span>
+                    </label>
+                    <label class="radio-card">
+                        <input type="radio" name="action" value="mp3">
+                        <span>🎵 Audio MP3</span>
+                    </label>
+                    <label class="radio-card">
+                        <input type="radio" name="action" value="wav">
+                        <span>🎧 Audio WAV</span>
+                    </label>
+                    <label class="radio-card">
+                        <input type="radio" name="action" value="txt">
+                        <span style="color:#00a2ff">🤖 Texto (Whisper)</span>
+                    </label>
+                </div>
+
+                <button type="submit" id="uploadSubmitBtn" class="action-btn">Procesar Archivo</button>
+            </form>
+
+            <div id="upload-error-msg"></div>
+
+            <div id="upload-progress-area" class="progress-area">
+                <div class="progress-bar-container"><div class="progress-fill-overlay" id="upload-progress-fill"></div></div>
+                <div id="upload-status-text" class="status-text">Procesando...</div>
+            </div>
+
+            <div id="result-area" style="display: none;">
+                <div id="audioPlayerContainer" class="result-card" style="display: none;">
+                    <h3>Pre-escucha de Audio:</h3>
+                    <audio id="audioPlayer" controls></audio>
+                </div>
+                <div id="textViewerContainer" class="result-card" style="display: none;">
+                    <h3 style="color:#00a2ff;">TRANSCRIPCIÓN DE LA IA:</h3>
+                    <div id="transcriptionText"></div>
+                </div>
+                <button id="uploadShareBtn" class="action-btn green-btn">⬇️ Descargar Resultado</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="platforms-section stagger-3" id="platforms-footer">
+        <p>Compatible con todas las <strong>plataformas</strong> principales</p>
+        <div class="platform-icons">
+            <div class="icon-wrapper"><div class="icon-brand b-ig"><svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></div></div>
+            <div class="icon-wrapper"><div class="icon-brand b-x"><svg viewBox="0 0 24 24"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></div></div>
+            <div class="icon-wrapper"><div class="icon-brand b-fb"><svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></div></div>
+            <div class="icon-wrapper"><div class="icon-brand b-pin"><svg viewBox="0 0 24 24"><path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.951-7.252 4.168 0 7.41 2.967 7.41 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.367 18.592 0 12.017 0z"/></svg></div></div>
+            <div class="icon-wrapper"><div class="icon-brand b-tk"><svg viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg></div></div>
+            <div class="icon-wrapper"><div class="icon-brand b-yt"><svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div></div>
+        </div>
+    </div>
+
+    <footer>
+        <span>Términos</span> • <span>Privacidad</span> • <span>Contacto</span> • <span>API</span>
+    </footer>
+
+    <script>
+        // Lógica de pestañas
+        const tabDownload = document.getElementById('tab-download');
+        const tabConvert = document.getElementById('tab-convert');
+        const viewDownload = document.getElementById('download-section');
+        const viewConvert = document.getElementById('convert-section');
+        const platformsFooter = document.getElementById('platforms-footer');
+
+        tabDownload.addEventListener('click', () => {
+            tabDownload.classList.add('active'); tabConvert.classList.remove('active');
+            viewDownload.classList.add('active-view'); viewConvert.classList.remove('active-view');
+            platformsFooter.style.display = 'block'; 
+        });
+        
+        tabConvert.addEventListener('click', () => {
+            tabConvert.classList.add('active'); tabDownload.classList.remove('active');
+            viewConvert.classList.add('active-view'); viewDownload.classList.remove('active-view');
+            platformsFooter.style.display = 'block'; 
+        });
+
+        // Click listeners para radios locales
+        document.querySelectorAll('.radio-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const input = this.querySelector('input');
+                document.querySelectorAll(`input[name="${input.name}"]`).forEach(inp => {
+                    const c = inp.parentElement;
+                    c.classList.remove('selected'); c.style.borderColor = 'rgba(255,255,255,0.1)';
+                });
+                this.classList.add('selected'); this.style.borderColor = '#00a2ff';
+                input.checked = true;
+            });
+        });
+
+        function fireParticles(element) {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + (rect.width / 2); const centerY = rect.top + (rect.height / 2);
+            for(let i = 0; i < 25; i++) {
+                const p = document.createElement('div'); p.className = 'particle'; document.body.appendChild(p);
+                const angle = Math.random() * Math.PI * 2; const velocity = 80 + Math.random() * 100;
+                p.style.left = `${centerX}px`; p.style.top = `${centerY}px`;
+                p.style.setProperty('--tx', `${Math.cos(angle) * velocity}px`); p.style.setProperty('--ty', `${Math.sin(angle) * velocity}px`);
+                setTimeout(() => p.remove(), 800);
+            }
+        }
+
+        let activeIconElement = null;
+        window.currentDlProgress = 0;
+
+        // Vuela el logo AL INICIO (0%) de la barra
+        function moveIconToTarget(platformClass, targetId) {
+            const icon = document.querySelector(platformClass);
+            const target = document.getElementById(targetId);
+            if (!icon || !target) return;
+            if (activeIconElement && activeIconElement !== icon) returnIcon(activeIconElement); 
+
+            activeIconElement = icon; const wrapper = icon.parentElement;
+            const wRect = wrapper.getBoundingClientRect(); const tRect = target.getBoundingClientRect();
+            if (tRect.width === 0 && tRect.top === 0) { setTimeout(() => moveIconToTarget(platformClass, targetId), 50); return; }
+
+            // Calcular distancia exacta al inicio de la barra (donde está el target-spot)
+            const tx = tRect.left - (wRect.left + wRect.width/2);
+            const ty = tRect.top - (wRect.top + wRect.height/2);
+            
+            icon.style.setProperty('--dx', `${tx}px`); icon.style.setProperty('--dy', `${ty}px`);
+            icon.style.setProperty('--progress-x', `0px`);
+            
+            icon.classList.remove('docked'); icon.classList.add('flying'); void icon.offsetWidth; 
+
+            icon.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.8s ease';
+            icon.style.boxShadow = `0 15px 25px rgba(0,0,0,0.9), inset 0 2px 2px rgba(255,255,255,0.6)`;
+            
+            // Efecto flotante leve encima de la barra
+            icon.style.transform = `translate(calc(${tx}px + var(--progress-x, 0px)), ${ty}px) scale(1.3) rotate(-5deg)`;
+            icon.querySelector('svg').style.transform = `scale(1.1)`; 
+
+            setTimeout(() => { if (icon === activeIconElement) icon.classList.add('docked'); }, 800);
+        }
+
+        function returnIcon(specificIcon = null) {
+            const iToReturn = specificIcon || activeIconElement;
+            if (iToReturn) {
+                iToReturn.style.setProperty('--progress-x', `0px`);
+                iToReturn.classList.remove('docked'); void iToReturn.offsetWidth; 
+                iToReturn.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.8s ease';
+                iToReturn.style.transform = 'translate(0px, 0px) scale(1) rotateX(0deg) rotateY(0deg)';
+                iToReturn.style.boxShadow = ''; iToReturn.querySelector('svg').style.transform = `translateZ(25px) scale(1)`;
+                setTimeout(() => { if (iToReturn) { iToReturn.style.transition = 'all 0.3s ease'; iToReturn.classList.remove('flying'); } }, 800); 
+                if (iToReturn === activeIconElement) activeIconElement = null;
+            }
+        }
+
+        function updateSocialIcon(url, targetId) {
+            const lw = url.toLowerCase();
+            const am = document.getElementById('ambient-glow'); am.className = 'ambient-glow'; 
+            let pC = null;
+            if (lw.includes('youtube.com') || lw.includes('youtu.be')) { am.classList.add('theme-yt'); pC = '.b-yt'; }
+            else if (lw.includes('tiktok.com')) { am.classList.add('theme-tk'); pC = '.b-tk'; }
+            else if (lw.includes('instagram.com')) { am.classList.add('theme-ig'); pC = '.b-ig'; }
+            else if (lw.includes('facebook.com') || lw.includes('fb.watch')) { am.classList.add('theme-fb'); pC = '.b-fb'; }
+            else if (lw.includes('twitter.com') || lw.includes('x.com')) { am.classList.add('theme-x'); pC = '.b-x'; }
+            else if (lw.includes('pinterest.com') || lw.includes('pin.it')) { am.classList.add('theme-pin'); pC = '.b-pin'; }
+            if (pC) moveIconToTarget(pC, targetId); else returnIcon();
+        }
+
+        // Actualizar al redimensionar
+        window.addEventListener('resize', () => {
+            if (activeIconElement) {
+                const wrapper = activeIconElement.parentElement;
+                const target = document.getElementById('icon-target-spot');
+                const wRect = wrapper.getBoundingClientRect(); const tRect = target.getBoundingClientRect();
+                const tx = tRect.left - (wRect.left + wRect.width/2);
+                const ty = tRect.top - (wRect.top + wRect.height/2);
+                const barWidth = document.querySelector('.progress-bar-container').offsetWidth;
+                
+                activeIconElement.style.transition = 'none'; 
+                activeIconElement.style.setProperty('--dx', `${tx}px`); activeIconElement.style.setProperty('--dy', `${ty}px`);
+                activeIconElement.style.setProperty('--progress-x', (window.currentDlProgress / 100) * barWidth + 'px');
+                activeIconElement.style.transform = `translate(calc(${tx}px + var(--progress-x, 0px)), ${ty}px) scale(1.3) rotate(-5deg)`;
+            }
+        });
+
+        // ==========================================
+        // PESTAÑA 1: DESCARGADOR DE ENLACES
+        // ==========================================
+        const urlInput = document.getElementById('urlInput');
+        const dlForm = document.getElementById('downloadForm');
+        const qualityWrapper = document.getElementById('qualityWrapper');
+        let dlFile = null;
+
+        // Función que empuja el progreso Y el logo al mismo tiempo
+        function updateUIPercentage(pct) {
+            document.getElementById('progress-fill').style.width = pct + '%';
+            if (pct === 0) {
+                document.getElementById('status-text').innerText = 'Listo para procesar';
+            } else if (pct >= 100) {
+                document.getElementById('status-text').innerText = 'Transfiriendo a tu dispositivo...';
+            } else {
+                document.getElementById('status-text').innerText = `Descargando: ${pct.toFixed(0)}%`;
+            }
+            
+            if(activeIconElement) {
+                const barWidth = document.querySelector('.progress-bar-container').offsetWidth;
+                // Ajustamos suavemente la variable progress-x
+                activeIconElement.style.setProperty('--progress-x', (pct / 100) * barWidth + 'px');
+            }
+        }
+
+        urlInput.addEventListener('input', function(e) {
+            if(e.target.value.length > 5) {
+                qualityWrapper.style.display = 'flex';
+                document.getElementById('progress-area').style.display = 'block';
+                document.getElementById('progress-area').style.transform = 'translateZ(80px) scale(1)';
+                document.getElementById('progress-area').style.opacity = '1';
+                window.currentDlProgress = 0;
+                updateUIPercentage(0);
+                document.getElementById('shareBtn').style.display = 'none';
+                document.getElementById('shareBtn').classList.remove('morph-active');
+                
+                void document.getElementById('progress-area').getBoundingClientRect();
+                setTimeout(() => updateSocialIcon(e.target.value, 'icon-target-spot'), 50);
+            } else {
+                qualityWrapper.style.display = 'none';
+                returnIcon(); document.getElementById('progress-area').style.display = 'none';
+                document.getElementById('shareBtn').style.display = 'none'; document.getElementById('ambient-glow').className = 'ambient-glow'; 
+            }
+        });
+
+        dlForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            document.getElementById('error-msg').style.display = 'none'; document.getElementById('shareBtn').style.display = 'none'; dlFile = null;
+            const btn = document.getElementById('submitBtn'); btn.innerText = 'Procesando...'; btn.disabled = true; btn.style.animation = 'none'; 
+            
+            document.getElementById('inputBox').classList.add('scanning'); document.getElementById('stars-bg').classList.add('warp-speed'); 
+            document.getElementById('progress-area').style.display = 'block'; document.getElementById('status-text').innerText = 'Conectando...';
+            
+            void document.getElementById('progress-area').getBoundingClientRect(); setTimeout(() => updateSocialIcon(urlInput.value, 'icon-target-spot'), 50);
+
+            window.currentDlProgress = 2; updateUIPercentage(window.currentDlProgress);
+            let fakeInterval = setInterval(() => { if(window.currentDlProgress < 85) { window.currentDlProgress += 1; updateUIPercentage(window.currentDlProgress); } }, 300);
+
+            try {
+                const formData = new FormData(dlForm);
+                const response = await fetch('/download', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error((await response.json()).error || 'Fallo en el servidor');
+                const task_id = (await response.json()).task_id;
+                const eventSource = new EventSource(`/download_progress?task_id=${task_id}`);
+
+                eventSource.onmessage = async function(event) {
+                    const task = JSON.parse(event.data);
+                    if (task.status === 'running') {
+                        if (task.progress > window.currentDlProgress) { 
+                            window.currentDlProgress = task.progress; 
+                            updateUIPercentage(window.currentDlProgress); 
+                        }
+                    } else if (task.status === 'success') {
+                        eventSource.close(); clearInterval(fakeInterval); 
+                        window.currentDlProgress = 100; updateUIPercentage(100);
+                        
+                        try {
+                            const fRes = await fetch(`/download_file?task_id=${task_id}`);
+                            if (!fRes.ok) throw new Error("Fallo");
+                            
+                            const blob = await fRes.blob();
+                            dlFile = new File([blob], 'video.mp4', { type: 'video/mp4' });
+                            
+                            document.getElementById('progress-area').style.opacity = '0'; document.getElementById('progress-area').style.transform = 'translateZ(80px) scale(0.8)';
+                            setTimeout(() => {
+                                document.getElementById('progress-area').style.display = 'none'; btn.style.display = 'none'; 
+                                document.getElementById('shareBtn').style.display = 'block'; document.getElementById('inputBox').classList.remove('scanning'); document.getElementById('stars-bg').classList.remove('warp-speed'); 
+                                requestAnimationFrame(() => { document.getElementById('shareBtn').classList.add('morph-active'); setTimeout(() => fireParticles(document.getElementById('shareBtn')), 300); });
+                            }, 400);
+                        } catch (err) { throw new Error('Fallo al transferir.'); }
+                    } else if (task.status === 'error') {
+                        eventSource.close(); clearInterval(fakeInterval);
+                        document.getElementById('error-msg').innerText = task.error_message || 'Video privado o enlace inválido.';
+                        document.getElementById('error-msg').style.display = 'block'; document.getElementById('progress-area').style.display = 'none'; resetDlForm(); 
+                    }
+                };
+                eventSource.onerror = function() { eventSource.close(); clearInterval(fakeInterval); document.getElementById('error-msg').innerText = 'Fallo en conexión.'; document.getElementById('error-msg').style.display = 'block'; document.getElementById('progress-area').style.display = 'none'; resetDlForm(); };
+            } catch (error) { clearInterval(fakeInterval); document.getElementById('error-msg').innerText = error.message; document.getElementById('error-msg').style.display = 'block'; document.getElementById('progress-area').style.display = 'none'; resetDlForm(); }
+        });
+
+        document.getElementById('shareBtn').addEventListener('click', async () => {
+            if (dlFile && navigator.canShare && navigator.canShare({ files: [dlFile] })) {
+                try { await navigator.share({ files: [dlFile], title: 'Descarga' }); setTimeout(resetDlForm, 1000); } catch (e) { forceDownload(dlFile, resetDlForm); }
+            } else { forceDownload(dlFile, resetDlForm); }
+        });
+
+        function forceDownload(file, callback) {
+            const url = window.URL.createObjectURL(file); const a = document.createElement('a');
+            a.style.display = 'none'; a.href = url; a.download = file.name; document.body.appendChild(a); a.click();
+            setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); if(callback) callback(); }, 1000);
+        }
+
+        function resetDlForm() {
+            const btn = document.getElementById('submitBtn'); btn.style.display = 'inline-block'; btn.innerText = 'Descargar ahora'; btn.disabled = false; btn.style.animation = 'pulse-neon 2.5s infinite';
+            document.getElementById('shareBtn').style.display = 'none'; document.getElementById('shareBtn').classList.remove('morph-active');
+            window.currentDlProgress = 0; updateUIPercentage(0); 
+            document.getElementById('progress-area').style.transform = 'translateZ(80px) scale(1)'; document.getElementById('progress-area').style.opacity = '1';
+            document.getElementById('stars-bg').classList.remove('warp-speed'); 
+            qualityWrapper.style.display = 'none';
+            dlForm.reset(); document.getElementById('inputBox').classList.remove('scanning'); returnIcon(); 
+        }
+
+        // ==========================================
+        // PESTAÑA 2: PROCESADOR IA
+        // ==========================================
+        const uploadForm = document.getElementById('uploadForm');
+        const videoFileInput = document.getElementById('videoFile');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const uploadProgressArea = document.getElementById('upload-progress-area');
+        const uploadProgressFill = document.getElementById('upload-progress-fill');
+        const uploadStatusText = document.getElementById('upload-status-text');
+        const resultArea = document.getElementById('result-area');
+        let uploadFileBlob = null;
+        let uploadFileName = "";
+
+        videoFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                fileNameDisplay.innerHTML = `<span style="color:#00ff88">${e.target.files[0].name}</span>`;
+                returnIcon(); 
+                uploadProgressArea.style.display = 'block';
+                uploadProgressArea.style.transform = 'translateZ(80px) scale(1)';
+                uploadProgressArea.style.opacity = '1';
+                uploadProgressFill.style.width = '0%';
+                uploadStatusText.innerText = 'Archivo listo para subir';
+                resultArea.style.display = 'none';
+            }
+        });
+
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const isFile = videoFileInput.files.length > 0;
+            if (!isFile) return;
+            
+            document.getElementById('uploadSubmitBtn').style.display = 'none';
+            document.getElementById('dropZone').style.display = 'none';
+            document.getElementById('formatSelectorsUpload').style.display = 'none';
+            document.getElementById('upload-error-msg').style.display = 'none';
+            document.getElementById('stars-bg').classList.add('warp-speed'); 
+            uploadProgressArea.style.display = 'block';
+
+            const actionSelected = document.querySelector('input[name="action"]:checked').value;
+            const formData = new FormData(uploadForm);
+            
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/process_media');
+            xhr.responseType = 'blob'; 
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    uploadProgressFill.style.width = pct + '%';
+                    uploadStatusText.innerText = `Subiendo al servidor: ${pct}%`;
+                    if (pct === 100) uploadStatusText.innerText = actionSelected === 'txt' ? 'La IA está procesando (toma un momento)...' : 'Convirtiendo formatos...';
+                }
+            });
+
+            xhr.onload = function() {
+                document.getElementById('stars-bg').classList.remove('warp-speed'); 
+                if (xhr.status === 200 && xhr.getResponseHeader("Content-Type") !== 'text/html') {
+                    handleIABlobSuccess(xhr.response, actionSelected);
+                } else {
+                    document.getElementById('upload-error-msg').innerText = 'Error. Asegúrate de que el video no esté corrupto.';
+                    document.getElementById('upload-error-msg').style.display = 'block';
+                    resetUploadForm();
+                }
+            };
+            xhr.send(formData);
+        });
+
+        function handleIABlobSuccess(blobData, actionSelected) {
+            uploadFileBlob = blobData;
+            document.getElementById('audioPlayerContainer').style.display = 'none';
+            document.getElementById('textViewerContainer').style.display = 'none';
+
+            if (actionSelected === 'mp3' || actionSelected === 'wav') {
+                uploadFileName = actionSelected === 'mp3' ? 'audio_estandar.mp3' : 'audio_estudio.wav';
+                document.getElementById('audioPlayer').src = window.URL.createObjectURL(uploadFileBlob);
+                document.getElementById('audioPlayerContainer').style.display = 'block';
+            } else if (actionSelected === 'txt') {
+                uploadFileName = 'transcripcion_whisper.txt';
+                uploadFileBlob.text().then(text => {
+                    document.getElementById('transcriptionText').innerText = text;
+                    document.getElementById('textViewerContainer').style.display = 'block';
+                });
+            } else { uploadFileName = 'video_convertido.mp4'; }
+
+            uploadProgressArea.style.display = 'none';
+            resultArea.style.display = 'block';
+            document.getElementById('uploadShareBtn').classList.add('morph-active');
+            fireParticles(document.getElementById('uploadShareBtn'));
+        }
+
+        document.getElementById('uploadShareBtn').addEventListener('click', async () => {
+            if (!uploadFileBlob) return;
+            const file = new File([uploadFileBlob], uploadFileName, { type: uploadFileBlob.type });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try { await navigator.share({ files: [file], title: 'Media' }); setTimeout(resetUploadForm, 1000); } catch (e) { forceDownload(file, resetUploadForm); }
+            } else { forceDownload(file, resetUploadForm); }
+        });
+
+        function resetUploadForm() {
+            document.getElementById('uploadSubmitBtn').style.display = 'block'; document.getElementById('dropZone').style.display = 'flex';
+            document.getElementById('formatSelectorsUpload').style.display = 'grid'; uploadProgressArea.style.display = 'none';
+            resultArea.style.display = 'none'; uploadForm.reset(); fileNameDisplay.innerHTML = `<span>Toca para seleccionar</span> un video (MOV, MP4)`; returnIcon();
+        }
+    </script>
+</body>
+</html>
