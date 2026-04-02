@@ -4,12 +4,12 @@ import json
 import threading
 import re
 import uuid
-import speech_recognition as sr
 import yt_dlp
 import imageio_ffmpeg
 from flask import Flask, render_template, request, send_file, jsonify, Response, stream_with_context
 from werkzeug.utils import secure_filename
 from moviepy.editor import VideoFileClip
+from openai import OpenAI
 
 app = Flask(__name__)
 
@@ -43,12 +43,9 @@ def progress_hook(d, task_id):
         tasks[task_id]['progress'] = progress
 
 # ==========================================
-# MOTOR 1: DESCARGADOR DE ENLACES (Lógica Estricta de Megas/Calidad)
+# MOTOR 1: DESCARGADOR DE ENLACES
 # ==========================================
 def download_video_task(url, task_id, quality):
-    # Lógica estricta: Obligamos al height a ser menor o igual a la calidad elegida.
-    # El "/best" al final es un salvavidas: si la red social (ej. TikTok) no reporta resoluciones, 
-    # descarga lo que haya para no generar un error.
     if quality == '1080':
         format_selector = 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]/best'
     elif quality == '720':
@@ -56,7 +53,6 @@ def download_video_task(url, task_id, quality):
     elif quality == '480':
         format_selector = 'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480]/best'
     else:
-        # Máxima Calidad (4K o la más alta disponible sin límites)
         format_selector = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
 
     ydl_opts = {
@@ -145,7 +141,7 @@ def process_media():
         filename = secure_filename(file.filename)
         unique_id = str(uuid.uuid4())
         input_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{unique_id}_{filename}")
-        temp_wav = os.path.join(app.config['UPLOAD_FOLDER'], f"{unique_id}_temp.wav")
+        temp_audio = os.path.join(app.config['UPLOAD_FOLDER'], f"{unique_id}_temp.mp3")
         file.save(input_path)
 
         if action == 'txt': output_filename, mimetype_str, download_name = f"{unique_id}_transcripcion.txt", 'text/plain', "transcripcion_exacta.txt"
@@ -157,14 +153,28 @@ def process_media():
 
         try:
             clip = VideoFileClip(input_path)
+            
             if action == 'txt':
-                clip.audio.write_audiofile(temp_wav, fps=16000, nbytes=2, codec='pcm_s16le', logger=None)
+                # Extraemos el audio en MP3 ligero para mandarlo a OpenAI
+                clip.audio.write_audiofile(temp_audio, fps=16000, nbytes=2, codec='libmp3lame', bitrate='64k', logger=None)
                 clip.close()
-                r = sr.Recognizer()
-                with sr.AudioFile(temp_wav) as source:
-                    audio_data = r.record(source)
-                    try: text = r.recognize_whisper(audio_data, model="small", language="spanish")
-                    except Exception as e: text = f"[Error en la transcripción: {str(e)}]"
+                
+                api_key = os.environ.get("OPENAI_API_KEY")
+                if not api_key:
+                    text = "[Error: Falta la clave API de OpenAI. Configúrala en Render como 'OPENAI_API_KEY']"
+                else:
+                    try:
+                        client = OpenAI(api_key=api_key)
+                        with open(temp_audio, "rb") as audio_file:
+                            transcript = client.audio.transcriptions.create(
+                                model="whisper-1",
+                                file=audio_file,
+                                language="es"
+                            )
+                        text = transcript.text
+                    except Exception as e:
+                        text = f"[Error en la IA de OpenAI: {str(e)}]"
+                        
                 with open(output_path, 'w', encoding='utf-8') as f: f.write(text)
             
             elif action == 'mp3':
@@ -183,7 +193,7 @@ def process_media():
             
         except Exception as e: return f"Error en el proceso: {str(e)}", 500
         finally:
-            for p in [input_path, temp_wav]:
+            for p in [input_path, temp_audio]:
                 if os.path.exists(p):
                     try: os.remove(p)
                     except: pass
