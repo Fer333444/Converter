@@ -68,8 +68,8 @@
             <form id="uploadForm">
                 <label for="videoFile" class="drop-zone" id="dropZone">
                     <div class="drop-icon">📁</div>
-                    <p id="fileNameDisplay" class="drop-text"><span>Toca para seleccionar</span> un video (MOV, MP4)</p>
-                    <input id="videoFile" name="video" type="file" accept=".mov,.mp4" style="display: none;" required/>
+                    <p id="fileNameDisplay" class="drop-text"><span>Toca para seleccionar</span> un video (Cualquier formato)</p>
+                    <input id="videoFile" name="video" type="file" accept="video/*" style="display: none;" required/>
                 </label>
 
                 <div class="radio-grid" id="formatSelectorsUpload">
@@ -430,12 +430,23 @@
                 }
             });
 
-            xhr.onload = function() {
+            xhr.onload = async function() {
                 document.getElementById('stars-bg').classList.remove('warp-speed'); 
-                if (xhr.status === 200 && xhr.getResponseHeader("Content-Type") !== 'text/html') {
+                
+                const contentType = xhr.getResponseHeader("Content-Type");
+                
+                if (xhr.status === 200 && contentType !== 'text/html') {
                     handleIABlobSuccess(xhr.response, actionSelected);
                 } else {
-                    document.getElementById('upload-error-msg').innerText = 'Error. Asegúrate de que el video no esté corrupto.';
+                    // Ahora capturamos el error EXACTO del servidor en Python
+                    let serverError = "Error desconocido de conexión.";
+                    try {
+                        serverError = await xhr.response.text();
+                    } catch (e) {
+                        serverError = "Error. Asegúrate de que el video no esté corrupto.";
+                    }
+                    
+                    document.getElementById('upload-error-msg').innerText = serverError;
                     document.getElementById('upload-error-msg').style.display = 'block';
                     resetUploadForm();
                 }
@@ -477,7 +488,9 @@
         function resetUploadForm() {
             document.getElementById('uploadSubmitBtn').style.display = 'block'; document.getElementById('dropZone').style.display = 'flex';
             document.getElementById('formatSelectorsUpload').style.display = 'grid'; uploadProgressArea.style.display = 'none';
-            resultArea.style.display = 'none'; uploadForm.reset(); fileNameDisplay.innerHTML = `<span>Toca para seleccionar</span> un video (MOV, MP4)`; returnIcon();
+            resultArea.style.display = 'none'; uploadForm.reset(); 
+            fileNameDisplay.innerHTML = `<span>Toca para seleccionar</span> un video (Cualquier formato)`; 
+            returnIcon();
         }
     </script>
 </body>

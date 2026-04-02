@@ -4,11 +4,11 @@ import json
 import threading
 import re
 import uuid
+import subprocess
 import yt_dlp
 import imageio_ffmpeg
 from flask import Flask, render_template, request, send_file, jsonify, Response, stream_with_context
 from werkzeug.utils import secure_filename
-from moviepy.editor import VideoFileClip
 from openai import OpenAI
 
 app = Flask(__name__)
@@ -25,7 +25,8 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024 
 
-ALLOWED_EXTENSIONS = {'mov', 'mp4'}
+# AHORA ACEPTAMOS CUALQUIER FORMATO DE VIDEO
+ALLOWED_EXTENSIONS = {'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'm4v', 'wmv'}
 tasks = {}
 
 def allowed_file(filename):
@@ -128,7 +129,7 @@ def download_file():
     return jsonify({"error": "Tarea no completada."}), 404
 
 # ==========================================
-# MOTOR 2: PROCESADOR IA Y ARCHIVOS LOCALES
+# MOTOR 2: PROCESADOR IA Y ARCHIVOS LOCALES (MOTOR FFMPEG PURO)
 # ==========================================
 @app.route('/process_media', methods=['POST'])
 def process_media():
@@ -152,16 +153,15 @@ def process_media():
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
 
         try:
-            clip = VideoFileClip(input_path)
-            
+            # Procesamiento con motor FFMPEG directo (No consume RAM y acepta TODO)
             if action == 'txt':
-                # Extraemos el audio en MP3 ligero para mandarlo a OpenAI
-                clip.audio.write_audiofile(temp_audio, fps=16000, nbytes=2, codec='libmp3lame', bitrate='64k', logger=None)
-                clip.close()
+                # Extraer audio súper ligero
+                cmd = [FFMPEG_PATH, '-y', '-i', input_path, '-vn', '-acodec', 'libmp3lame', '-b:a', '64k', '-ar', '16000', temp_audio]
+                subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
                 
                 api_key = os.environ.get("OPENAI_API_KEY")
                 if not api_key:
-                    text = "[Error: Falta la clave API de OpenAI. Configúrala en Render como 'OPENAI_API_KEY']"
+                    text = "[Error: Falta la clave API de OpenAI. Configúrala en Render]"
                 else:
                     try:
                         client = OpenAI(api_key=api_key)
@@ -178,26 +178,32 @@ def process_media():
                 with open(output_path, 'w', encoding='utf-8') as f: f.write(text)
             
             elif action == 'mp3':
-                clip.audio.write_audiofile(output_path, fps=44100, nbytes=2, codec='libmp3lame', bitrate='192k', logger=None)
-                clip.close()
+                cmd = [FFMPEG_PATH, '-y', '-i', input_path, '-q:a', '0', '-map', 'a', output_path]
+                subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                
             elif action == 'wav':
-                clip.audio.write_audiofile(output_path, fps=44100, nbytes=2, codec='pcm_s16le', logger=None)
-                clip.close()
-            else:
-                clip.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
-                clip.close()
+                cmd = [FFMPEG_PATH, '-y', '-i', input_path, '-vn', '-acodec', 'pcm_s16le', '-ar', '44100', output_path]
+                subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                
+            else: # MP4
+                cmd = [FFMPEG_PATH, '-y', '-i', input_path, '-c:v', 'libx264', '-preset', 'fast', '-crf', '28', '-c:a', 'aac', output_path]
+                subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
 
             # Blindaje Final
             response_file = send_file(output_path, mimetype=mimetype_str, as_attachment=True, download_name=download_name)
             return response_file
             
-        except Exception as e: return f"Error en el proceso: {str(e)}", 500
+        except subprocess.CalledProcessError as e:
+            error_msg = e.stderr.decode('utf-8')[-200:] if e.stderr else 'Error desconocido procesando media'
+            return f"Error interno de video: {error_msg}", 500
+        except Exception as e:
+            return f"Error general: {str(e)}", 500
         finally:
             for p in [input_path, temp_audio]:
                 if os.path.exists(p):
                     try: os.remove(p)
                     except: pass
-    else: return "Formato no válido. Sube un archivo .mov o .mp4", 400
+    else: return f"Formato no soportado. Extensiones permitidas: {', '.join(ALLOWED_EXTENSIONS)}", 400
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=8000, use_reloader=False)
