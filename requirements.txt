@@ -4,3 +4,4 @@ imageio-ffmpeg==0.4.9
 moviepy==1.0.3
 openai==1.13.3
 gunicorn==21.2.0
+setuptools
