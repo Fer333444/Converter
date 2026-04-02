@@ -41,17 +41,36 @@
             letter-spacing: 1px;
         }
         .stat-title.green { color: #00ff88; }
-        .refresh-btn {
-            background: rgba(255,255,255,0.1);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 30px;
-            transition: all 0.3s;
+        
+        /* Nuevo indicador de "En Vivo" que palpita */
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 35px;
+            padding: 8px 18px;
+            background: rgba(255, 50, 50, 0.1);
+            border: 1px solid rgba(255, 50, 50, 0.4);
+            color: #ff4d4d;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 15px rgba(255, 50, 50, 0.2);
+            animation: pulse-red 2s infinite;
         }
-        .refresh-btn:hover { background: rgba(255,255,255,0.2); }
+        .dot {
+            width: 8px;
+            height: 8px;
+            background-color: #ff4d4d;
+            border-radius: 50%;
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 50, 50, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); }
+        }
     </style>
 </head>
 <body>
@@ -82,35 +101,36 @@
             </div>
         </div>
 
-        <button class="refresh-btn" onclick="loadStats()">🔄 Actualizar Datos</button>
-        <br><br>
-        <a href="/" style="color: #888; font-size: 14px; text-decoration: none;">← Volver a la App</a>
+        <div class="live-indicator">
+            <div class="dot"></div> Actualización Automática
+        </div>
+        
+        <br><br><br>
+        <a href="/" style="color: #888; font-size: 14px; text-decoration: none; transition: color 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">← Volver a la App</a>
     </div>
 
     <script>
         async function loadStats() {
-            const btn = document.querySelector('.refresh-btn');
-            btn.innerText = "Cargando...";
-            
             try {
                 const res = await fetch('/api/stats');
                 const data = await res.json();
                 
-                // Animar números
+                // Actualizar los números en pantalla
                 document.getElementById('stat-links').innerText = data.total_links_descargados;
                 document.getElementById('stat-txt').innerText = data.herramientas_locales.txt;
                 document.getElementById('stat-mp4').innerText = data.herramientas_locales.mp4;
-                // Sumar mp3 y wav
+                // Sumar mp3 y wav para tener el total de audios
                 document.getElementById('stat-audio').innerText = data.herramientas_locales.mp3 + data.herramientas_locales.wav;
             } catch (e) {
-                console.error("Fallo al cargar stats", e);
+                console.error("Fallo al cargar las estadísticas", e);
             }
-            
-            btn.innerText = "🔄 Actualizar Datos";
         }
 
-        // Cargar al entrar a la página
+        // 1. Cargar los datos inmediatamente al entrar a la página
         loadStats();
+
+        // 2. MAGIA: Programar un temporizador que ejecute loadStats() cada 3 segundos (3000 milisegundos)
+        setInterval(loadStats, 3000);
     </script>
 </body>
 </html>
