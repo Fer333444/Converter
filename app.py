@@ -86,6 +86,13 @@ def download_video_task(url, task_id, quality):
         'cookiefile': COOKIES_FILE, 
         'ffmpeg_location': FFMPEG_PATH,
         'progress_hooks': [lambda d: progress_hook(d, task_id)],
+        # NUEVO: Camuflaje para evadir bloqueos
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+        },
+        'extractor_retries': 3,
     }
 
     tasks[task_id] = {'progress': 0, 'status': 'running'}
