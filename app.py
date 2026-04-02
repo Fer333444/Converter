@@ -17,6 +17,7 @@ app = Flask(__name__)
 DOWNLOAD_FOLDER = 'descargas'
 UPLOAD_FOLDER = 'uploads'
 COOKIES_FILE = 'cookies.txt' 
+STATS_FILE = 'stats.json' # Archivo para guardar las estadísticas
 FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
 
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
@@ -25,9 +26,28 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024 
 
-# AHORA ACEPTAMOS CUALQUIER FORMATO DE VIDEO
 ALLOWED_EXTENSIONS = {'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'm4v', 'wmv'}
 tasks = {}
+
+# ==========================================
+# SISTEMA DE ESTADÍSTICAS
+# ==========================================
+def load_stats():
+    if os.path.exists(STATS_FILE):
+        try:
+            with open(STATS_FILE, 'r') as f:
+                return json.load(f)
+        except: pass
+    return {
+        'total_links_descargados': 0,
+        'herramientas_locales': {'mp4': 0, 'mp3': 0, 'wav': 0, 'txt': 0}
+    }
+
+def save_stats(stats):
+    try:
+        with open(STATS_FILE, 'w') as f:
+            json.dump(stats, f)
+    except: pass
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -104,6 +124,11 @@ def start_download():
     if "threads.com" in video_url: video_url = video_url.replace("threads.com", "threads.net")
     if "threads.net" in video_url and "?" in video_url: video_url = video_url.split("?")[0]
 
+    # Registrar estadística
+    stats = load_stats()
+    stats['total_links_descargados'] += 1
+    save_stats(stats)
+
     task_id = str(int(time.time() * 1000))
     threading.Thread(target=download_video_task, args=(video_url, task_id, quality)).start()
     return jsonify({"task_id": task_id}), 202
@@ -129,7 +154,7 @@ def download_file():
     return jsonify({"error": "Tarea no completada."}), 404
 
 # ==========================================
-# MOTOR 2: PROCESADOR IA Y ARCHIVOS LOCALES (MOTOR FFMPEG PURO)
+# MOTOR 2: PROCESADOR IA Y FFMPEG PURO
 # ==========================================
 @app.route('/process_media', methods=['POST'])
 def process_media():
@@ -139,6 +164,12 @@ def process_media():
 
     if file.filename == '': return "Ningún archivo seleccionado", 400
     if file and allowed_file(file.filename):
+        # Registrar estadística de herramienta local
+        stats = load_stats()
+        if action in stats['herramientas_locales']:
+            stats['herramientas_locales'][action] += 1
+            save_stats(stats)
+
         filename = secure_filename(file.filename)
         unique_id = str(uuid.uuid4())
         input_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{unique_id}_{filename}")
@@ -153,9 +184,7 @@ def process_media():
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
 
         try:
-            # Procesamiento con motor FFMPEG directo (No consume RAM y acepta TODO)
             if action == 'txt':
-                # Extraer audio súper ligero
                 cmd = [FFMPEG_PATH, '-y', '-i', input_path, '-vn', '-acodec', 'libmp3lame', '-b:a', '64k', '-ar', '16000', temp_audio]
                 subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
                 
@@ -185,11 +214,10 @@ def process_media():
                 cmd = [FFMPEG_PATH, '-y', '-i', input_path, '-vn', '-acodec', 'pcm_s16le', '-ar', '44100', output_path]
                 subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
                 
-            else: # MP4
+            else: 
                 cmd = [FFMPEG_PATH, '-y', '-i', input_path, '-c:v', 'libx264', '-preset', 'fast', '-crf', '28', '-c:a', 'aac', output_path]
                 subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
 
-            # Blindaje Final
             response_file = send_file(output_path, mimetype=mimetype_str, as_attachment=True, download_name=download_name)
             return response_file
             
@@ -204,6 +232,18 @@ def process_media():
                     try: os.remove(p)
                     except: pass
     else: return f"Formato no soportado. Extensiones permitidas: {', '.join(ALLOWED_EXTENSIONS)}", 400
+
+# ==========================================
+# PANEL DE ADMINISTRADOR
+# ==========================================
+@app.route('/panel-admin')
+def admin_panel():
+    return render_template('admin.html')
+
+@app.route('/api/stats')
+def get_stats():
+    # Devuelve el archivo JSON con los datos al frontend
+    return jsonify(load_stats())
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=8000, use_reloader=False)
