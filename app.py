@@ -90,23 +90,22 @@ def download_video_task(url, task_id, quality):
         except Exception as e:
             pass 
 
-    # 2. MOTOR LIGERO PARA YT Y PINTEREST (Adiós cuelgues de memoria)
+    # 2. MOTOR BLINDADO PARA YT Y PINTEREST (A prueba de Videos Musicales)
     ydl_opts = {
-        # Magia: Pedimos el archivo ya unido. Ignoramos FFmpeg por completo.
-        'format': 'b',
+        # Descarga video y audio separados a 720p máximo y los une sin explotar tu RAM
+        'format': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]/best',
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'{task_id}_raw.%(ext)s'),
         'restrictfilenames': True,
         'noplaylist': True,
         'quiet': True,
         'no_warnings': True,
         'cookiefile': COOKIES_FILE, 
+        'ffmpeg_location': FFMPEG_PATH,  # <--- CRÍTICO: Necesitamos esto para "coser" el video y el audio
         'progress_hooks': [lambda d: progress_hook(d, task_id)],
         'geo_bypass': True,
         'extractor_retries': 3,
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'es-MX,es-ES;q=0.9,es;q=0.8,en-US;q=0.7,en;q=0.6',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         },
     }
 
