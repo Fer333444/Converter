@@ -61,12 +61,41 @@ def progress_hook(d, task_id):
         tasks[task_id]['progress'] = progress
 
 def download_video_task(url, task_id, quality):
+    import urllib.request, urllib.parse, json
+    tasks[task_id] = {'progress': 0, 'status': 'running'}
+    
+    # ==================================================
+    # 1. BALA DE PLATA PARA TIKTOK (Bypass total)
+    # ==================================================
+    if "tiktok.com" in url or "vt.tiktok.com" in url:
+        try:
+            api_url = "https://www.tikwm.com/api/?url=" + urllib.parse.quote(url)
+            req = urllib.request.Request(api_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req) as response:
+                data = json.loads(response.read().decode())
+            
+            if data.get("code") == 0:
+                play_url = data["data"]["play"]
+                expected_filename = os.path.join(DOWNLOAD_FOLDER, f'{task_id}_raw.mp4')
+                tasks[task_id]['progress'] = 50 
+                urllib.request.urlretrieve(play_url, expected_filename)
+                
+                tasks[task_id]['progress'] = 100
+                tasks[task_id]['file_path'] = expected_filename
+                tasks[task_id]['final_name'] = "TikTok_Video.mp4"
+                tasks[task_id]['mime_type'] = 'video/mp4'
+                tasks[task_id]['status'] = 'success'
+                return
+        except Exception:
+            pass # Si falla la API, pasamos al método blindado abajo
+
+    # ==================================================
+    # 2. MOTOR BLINDADO PARA IG, YT, FB, X, PINTEREST
+    # ==================================================
     if quality == '1080':
         format_selector = 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]/best'
     elif quality == '720':
         format_selector = 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]/best'
-    elif quality == '480':
-        format_selector = 'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480]/best'
     else:
         format_selector = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
 
@@ -80,16 +109,17 @@ def download_video_task(url, task_id, quality):
         'cookiefile': COOKIES_FILE, 
         'ffmpeg_location': FFMPEG_PATH,
         'progress_hooks': [lambda d: progress_hook(d, task_id)],
+        # --- ESCUDOS ANTI-BLOQUEO ACTIVADOS ---
+        'geo_bypass': True,        # Engaña a los servidores sobre la ubicación
+        'extractor_retries': 5,    # Si hay bloqueo, ataca 5 veces seguidas hasta romperlo
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            # Disfrazamos al servidor de Render como si fuera un iPhone 14 real
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+            'Accept-Language': 'es-MX,es-ES;q=0.9,es;q=0.8,en-US;q=0.7,en;q=0.6',
         },
-        'extractor_retries': 3,
     }
 
-    tasks[task_id] = {'progress': 0, 'status': 'running'}
-    
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
@@ -104,9 +134,14 @@ def download_video_task(url, task_id, quality):
         tasks[task_id]['status'] = 'error'
         raw_error = str(e)
         clean_error = clean_ansi(raw_error)
-        if "Unsupported URL" in clean_error: tasks[task_id]['error_message'] = "Enlace no válido o perfil privado."
-        elif "Sign in" in clean_error or "login" in clean_error.lower(): tasks[task_id]['error_message'] = "El video es privado. Actualiza cookies.txt."
-        else: tasks[task_id]['error_message'] = "Error: " + clean_error[:100]
+        
+        # Mensajes precisos para saber exactamente qué pasó
+        if "Private video" in clean_error or "login" in clean_error.lower():
+            tasks[task_id]['error_message'] = "❌ Video privado. La cuenta de esa red social es privada."
+        elif "Unsupported URL" in clean_error:
+            tasks[task_id]['error_message'] = "❌ Enlace no soportado o mal copiado."
+        else:
+            tasks[task_id]['error_message'] = "❌ La red social bloqueó el acceso. Intenta en un rato."
 
 @app.route('/')
 def index():
