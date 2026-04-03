@@ -93,7 +93,7 @@ def download_video_task(url, task_id, quality):
     # 2. MOTOR LIGERO PARA YT Y PINTEREST (Adiós cuelgues de memoria)
     ydl_opts = {
         # Magia: Pedimos el archivo ya unido. Ignoramos FFmpeg por completo.
-        'format': 'best[ext=mp4]/best',
+        'format': 'b',
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'{task_id}_raw.%(ext)s'),
         'restrictfilenames': True,
         'noplaylist': True,
