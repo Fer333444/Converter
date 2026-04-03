@@ -61,12 +61,10 @@ def progress_hook(d, task_id):
         tasks[task_id]['progress'] = progress
 
 def download_video_task(url, task_id, quality):
-    import urllib.request, urllib.parse, json
+    import urllib.request, urllib.parse, json, os
     tasks[task_id] = {'progress': 0, 'status': 'running'}
     
-    # ==================================================
-    # 1. BALA DE PLATA PARA TIKTOK (Bypass total)
-    # ==================================================
+    # 1. BALA DE PLATA PARA TIKTOK
     if "tiktok.com" in url or "vt.tiktok.com" in url:
         try:
             api_url = "https://www.tikwm.com/api/?url=" + urllib.parse.quote(url)
@@ -78,7 +76,10 @@ def download_video_task(url, task_id, quality):
                 play_url = data["data"]["play"]
                 expected_filename = os.path.join(DOWNLOAD_FOLDER, f'{task_id}_raw.mp4')
                 tasks[task_id]['progress'] = 50 
-                urllib.request.urlretrieve(play_url, expected_filename)
+                
+                req_vid = urllib.request.Request(play_url, headers={'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X)'})
+                with urllib.request.urlopen(req_vid) as vid_resp, open(expected_filename, 'wb') as f:
+                    f.write(vid_resp.read())
                 
                 tasks[task_id]['progress'] = 100
                 tasks[task_id]['file_path'] = expected_filename
@@ -86,34 +87,23 @@ def download_video_task(url, task_id, quality):
                 tasks[task_id]['mime_type'] = 'video/mp4'
                 tasks[task_id]['status'] = 'success'
                 return
-        except Exception:
-            pass # Si falla la API, pasamos al método blindado abajo
+        except Exception as e:
+            pass 
 
-    # ==================================================
-    # 2. MOTOR BLINDADO PARA IG, YT, FB, X, PINTEREST
-    # ==================================================
-    if quality == '1080':
-        format_selector = 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080]/best'
-    elif quality == '720':
-        format_selector = 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720]/best'
-    else:
-        format_selector = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
-
+    # 2. MOTOR LIGERO PARA YT Y PINTEREST (Adiós cuelgues de memoria)
     ydl_opts = {
-        'format': format_selector,
+        # Magia: Pedimos el archivo ya unido. Ignoramos FFmpeg por completo.
+        'format': 'best[ext=mp4]/best',
         'outtmpl': os.path.join(DOWNLOAD_FOLDER, f'{task_id}_raw.%(ext)s'),
         'restrictfilenames': True,
         'noplaylist': True,
         'quiet': True,
         'no_warnings': True,
         'cookiefile': COOKIES_FILE, 
-        'ffmpeg_location': FFMPEG_PATH,
         'progress_hooks': [lambda d: progress_hook(d, task_id)],
-        # --- ESCUDOS ANTI-BLOQUEO ACTIVADOS ---
-        'geo_bypass': True,        # Engaña a los servidores sobre la ubicación
-        'extractor_retries': 5,    # Si hay bloqueo, ataca 5 veces seguidas hasta romperlo
+        'geo_bypass': True,
+        'extractor_retries': 3,
         'http_headers': {
-            # Disfrazamos al servidor de Render como si fuera un iPhone 14 real
             'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'es-MX,es-ES;q=0.9,es;q=0.8,en-US;q=0.7,en;q=0.6',
@@ -134,14 +124,9 @@ def download_video_task(url, task_id, quality):
         tasks[task_id]['status'] = 'error'
         raw_error = str(e)
         clean_error = clean_ansi(raw_error)
-        
-        # Mensajes precisos para saber exactamente qué pasó
-        if "Private video" in clean_error or "login" in clean_error.lower():
-            tasks[task_id]['error_message'] = "❌ Video privado. La cuenta de esa red social es privada."
-        elif "Unsupported URL" in clean_error:
-            tasks[task_id]['error_message'] = "❌ Enlace no soportado o mal copiado."
-        else:
-            tasks[task_id]['error_message'] = "❌ La red social bloqueó el acceso. Intenta en un rato."
+        if "Private video" in clean_error or "login" in clean_error.lower(): tasks[task_id]['error_message'] = "❌ Video privado o necesita cookies."
+        elif "Unsupported URL" in clean_error: tasks[task_id]['error_message'] = "❌ Enlace no soportado."
+        else: tasks[task_id]['error_message'] = f"❌ Error: {clean_error[:50]}..."
 
 @app.route('/')
 def index():
@@ -182,10 +167,17 @@ def download_progress():
 @app.route('/download_file')
 def download_file():
     task_id = request.args.get('task_id')
-    if task_id in tasks and tasks[task_id]['status'] == 'success':
-        task = tasks[task_id]
+    if task_id not in tasks:
+        return jsonify({"error": "Tarea no encontrada."}), 404
+        
+    task = tasks[task_id]
+    if task['status'] == 'success':
         return send_file(task['file_path'], mimetype=task.get('mime_type', 'video/mp4'), as_attachment=True, download_name=task.get('final_name', 'video.mp4'))
-    return jsonify({"error": "Tarea no completada."}), 404
+    elif task['status'] == 'error':
+        # LE ENVIAMOS EL ERROR EXACTO A LA APP CON CÓDIGO 400
+        return jsonify({"error": task.get('error_message', '❌ Error desconocido en el servidor.')}), 400
+    else:
+        return jsonify({"error": "Sigue procesando..."}), 404
 
 @app.route('/process_media', methods=['POST'])
 def process_media():
